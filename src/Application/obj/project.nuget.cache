@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "837BIZkoFts=",
+  "success": true,
+  "projectFilePath": "/home/zeyad/projects/InvoiceBuilder/src/Application/Application.csproj",
+  "expectedPackageFiles": [
+    "/home/zeyad/.nuget/packages/erroror/2.0.1/erroror.2.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
