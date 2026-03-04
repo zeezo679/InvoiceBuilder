@@ -35,9 +35,7 @@ public class Invoice
     private Invoice()
     {
     }
-
-    // // 9. Fix Create() — DueDate is never set, call SetDueDate() during creation
-
+    
     public static ErrorOr<Invoice> Create(Guid senderId, Guid customerId, Guid createdByUserId, DateTime invoiceDate,
         string paymentTerms, string? notes = null)
     {
