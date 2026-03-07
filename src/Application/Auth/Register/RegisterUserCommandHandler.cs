@@ -21,16 +21,17 @@ public sealed class RegisterUserCommandHandler : IRequestHandler<RegisterUserCom
         //check if user already exists
         var userExists = await _identityService.UserExistsAsync(request.Email);
         if (userExists)
-            return Error.Conflict("User with this email already exists");
+            return Error.Conflict("User.DuplicateEmail", "user with this email already exists");
         
         var result = await _identityService.CreateUserAsync(
             request.FirstName,
             request.LastName,
             request.Email,
             request.Password);
+        
 
         return result.Match<ErrorOr<RegisterResult>>(
-            userId => new RegisterResult(userId),
+            userId => new RegisterResult(userId, request.Email),
             errors => errors);
     }
 }
