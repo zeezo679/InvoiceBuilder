@@ -109,7 +109,7 @@ Content-Type: application/json
 
 {
   "firstName": "Zeyad",
-  "lastName": "Ahmed",
+  "lastName": "Abdalla",
   "email": "zeyad@example.com",
   "password": "Passw0rd!"
 }
