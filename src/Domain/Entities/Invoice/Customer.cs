@@ -1,32 +1,40 @@
+using Domain.Errors;
+using ErrorOr;
+
 namespace Domain.Entities;
 
 public class Customer
 {
     public Guid Id { get; private set; }
     public string UserId { get; private set; } = null!;
+
     public string CustomerName { get; private set; } = null!;
     public string CompanyName { get; private set; } = null!;
     public string? ContactName { get; private set; }
     public string Email { get; private set; } = null!;
     public string? Phone { get; private set; }
     public string? Website { get; private set; }
+
     public string BillingAddressLine1 { get; private set; } = null!;
     public string? BillingAddressLine2 { get; private set; }
     public string BillingCity { get; private set; } = null!;
     public string BillingState { get; private set; } = null!;
     public string BillingPostalCode { get; private set; } = null!;
     public string BillingCountry { get; private set; } = null!;
+
     public string? ShippingAddressLine1 { get; private set; }
     public string? ShippingAddressLine2 { get; private set; }
     public string? ShippingCity { get; private set; }
     public string? ShippingState { get; private set; }
     public string? ShippingPostalCode { get; private set; }
     public string? ShippingCountry { get; private set; }
+
     public string? TaxId { get; private set; }
     public bool IsTaxExempt { get; private set; }
     public string? TaxExemptionNumber { get; private set; }
     public string? TaxExemptionCertificateUrl { get; private set; }
     public DateTime? TaxExemptionExpiryDate { get; private set; }
+    
     public int? DefaultPaymentDueDays { get; private set; } = 30;
     public decimal? EarlyPaymentDiscountPercent { get; private set; }
     public int? EarlyPaymentDiscountDays { get; private set; }
@@ -49,18 +57,21 @@ public class Customer
 
     private Customer(){}
 
-    public static Customer Create(string userId, string customerName, string companyName, string email, string billingAddressLine1,
+    public static ErrorOr<Customer> Create(string userId, string customerName, string companyName, string email, string billingAddressLine1,
         string billingCity, string billingState, string billingPostalCode, string billingCountry)
     {
-        RequireNonEmpty(userId, nameof(userId));
-        RequireNonEmpty(customerName, nameof(customerName));
-        RequireNonEmpty(companyName, nameof(companyName));
-        RequireValidEmail(email);
-        RequireNonEmpty(billingAddressLine1, nameof(billingAddressLine1));
-        RequireNonEmpty(billingCity, nameof(billingCity));
-        RequireNonEmpty(billingState, nameof(billingState));
-        RequireNonEmpty(billingPostalCode, nameof(billingPostalCode));
-        RequireNonEmpty(billingCountry, nameof(billingCountry));
+        if (string.IsNullOrWhiteSpace(userId)) return CustomerErrors.EmptyUserId;
+        if (string.IsNullOrWhiteSpace(customerName)) return CustomerErrors.EmptyCustomerName;
+        if (string.IsNullOrWhiteSpace(companyName)) return CustomerErrors.EmptyCompanyName;
+
+        var emailError = ValidateEmail(email);
+        if (emailError is not null) return emailError.Value;
+
+        if (string.IsNullOrWhiteSpace(billingAddressLine1)) return CustomerErrors.EmptyBillingAddressLine1;
+        if (string.IsNullOrWhiteSpace(billingCity)) return CustomerErrors.EmptyBillingCity;
+        if (string.IsNullOrWhiteSpace(billingState)) return CustomerErrors.EmptyBillingState;
+        if (string.IsNullOrWhiteSpace(billingPostalCode)) return CustomerErrors.EmptyBillingPostalCode;
+        if (string.IsNullOrWhiteSpace(billingCountry)) return CustomerErrors.EmptyBillingCountry;
 
         return new Customer
         {
@@ -81,13 +92,15 @@ public class Customer
         };
     }
 
-    public void UpdatePersonalInfo(string customerName, string companyName, string? contactName, string email, string? phone, string? website)
+    public ErrorOr<Updated> UpdatePersonalInfo(string customerName, string companyName, string? contactName, string email, string? phone, string? website)
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return CustomerErrors.Deleted;
 
-        RequireNonEmpty(customerName, nameof(customerName));
-        RequireNonEmpty(companyName, nameof(companyName));
-        RequireValidEmail(email);
+        if (string.IsNullOrWhiteSpace(customerName)) return CustomerErrors.EmptyCustomerName;
+        if (string.IsNullOrWhiteSpace(companyName)) return CustomerErrors.EmptyCompanyName;
+
+        var emailError = ValidateEmail(email);
+        if (emailError is not null) return emailError.Value;
 
         CustomerName = customerName.Trim();
         CompanyName = companyName.Trim();
@@ -96,17 +109,19 @@ public class Customer
         Phone = phone?.Trim();
         Website = website?.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
 
-    public void UpdateBillingAddress(string billingAddressLine1, string? billingAddressLine2, string billingCity, string billingState, string billingPostalCode, string billingCountry)
+    public ErrorOr<Updated> UpdateBillingAddress(string billingAddressLine1, string? billingAddressLine2, string billingCity, string billingState, string billingPostalCode, string billingCountry)
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return CustomerErrors.Deleted;
 
-        RequireNonEmpty(billingAddressLine1, nameof(billingAddressLine1));
-        RequireNonEmpty(billingCity, nameof(billingCity));
-        RequireNonEmpty(billingState, nameof(billingState));
-        RequireNonEmpty(billingPostalCode, nameof(billingPostalCode));
-        RequireNonEmpty(billingCountry, nameof(billingCountry));
+        if (string.IsNullOrWhiteSpace(billingAddressLine1)) return CustomerErrors.EmptyBillingAddressLine1;
+        if (string.IsNullOrWhiteSpace(billingCity)) return CustomerErrors.EmptyBillingCity;
+        if (string.IsNullOrWhiteSpace(billingState)) return CustomerErrors.EmptyBillingState;
+        if (string.IsNullOrWhiteSpace(billingPostalCode)) return CustomerErrors.EmptyBillingPostalCode;
+        if (string.IsNullOrWhiteSpace(billingCountry)) return CustomerErrors.EmptyBillingCountry;
 
         BillingAddressLine1 = billingAddressLine1.Trim();
         BillingAddressLine2 = billingAddressLine2?.Trim();
@@ -115,18 +130,20 @@ public class Customer
         BillingPostalCode = billingPostalCode.Trim();
         BillingCountry = billingCountry.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
 
-    public void SetShippingAddress(string? shippingAddressLine1, string? shippingAddressLine2, string? shippingCity, string? shippingState, string? shippingPostalCode, string? shippingCountry)
+    public ErrorOr<Updated> SetShippingAddress(string? shippingAddressLine1, string? shippingAddressLine2, string? shippingCity, string? shippingState, string? shippingPostalCode, string? shippingCountry)
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return CustomerErrors.Deleted;
 
         if (!string.IsNullOrWhiteSpace(shippingAddressLine1))
         {
-            RequireNonEmpty(shippingCity, nameof(shippingCity), "Shipping city is required when address is provided.");
-            RequireNonEmpty(shippingState, nameof(shippingState), "Shipping state is required when address is provided.");
-            RequireNonEmpty(shippingPostalCode, nameof(shippingPostalCode), "Shipping postal code is required when address is provided.");
-            RequireNonEmpty(shippingCountry, nameof(shippingCountry), "Shipping country is required when address is provided.");
+            if (string.IsNullOrWhiteSpace(shippingCity)) return CustomerErrors.EmptyShippingCity;
+            if (string.IsNullOrWhiteSpace(shippingState)) return CustomerErrors.EmptyShippingState;
+            if (string.IsNullOrWhiteSpace(shippingPostalCode)) return CustomerErrors.EmptyShippingPostalCode;
+            if (string.IsNullOrWhiteSpace(shippingCountry)) return CustomerErrors.EmptyShippingCountry;
         }
 
         ShippingAddressLine1 = shippingAddressLine1?.Trim();
@@ -136,21 +153,20 @@ public class Customer
         ShippingPostalCode = shippingPostalCode?.Trim();
         ShippingCountry = shippingCountry?.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
 
-    public void SetTaxInfo(string? taxId, bool isTaxExempt, string? taxExemptionNumber, string? taxExemptionCertificateUrl, DateTime? taxExemptionExpiryDate)
+    public ErrorOr<Updated> SetTaxInfo(string? taxId, bool isTaxExempt, string? taxExemptionNumber, string? taxExemptionCertificateUrl, DateTime? taxExemptionExpiryDate)
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return CustomerErrors.Deleted;
 
         if (isTaxExempt)
         {
-            RequireNonEmpty(taxExemptionNumber, nameof(taxExemptionNumber), "Tax exemption number is required for tax exempt customers.");
-            RequireNonEmpty(taxExemptionCertificateUrl, nameof(taxExemptionCertificateUrl), "Tax exemption certificate URL is required for tax exempt customers.");
-            
-            if (!taxExemptionExpiryDate.HasValue)
-                throw new ArgumentException("Tax exemption expiry date is required for tax exempt customers.", nameof(taxExemptionExpiryDate));
-            if (taxExemptionExpiryDate.Value <= DateTime.UtcNow)
-                throw new ArgumentException("Tax exemption expiry date must be in the future.", nameof(taxExemptionExpiryDate));
+            if (string.IsNullOrWhiteSpace(taxExemptionNumber)) return CustomerErrors.EmptyTaxExemptionNumber;
+            if (string.IsNullOrWhiteSpace(taxExemptionCertificateUrl)) return CustomerErrors.EmptyTaxExemptionCertificateUrl;
+            if (!taxExemptionExpiryDate.HasValue) return CustomerErrors.MissingTaxExemptionExpiryDate;
+            if (taxExemptionExpiryDate.Value <= DateTime.UtcNow) return CustomerErrors.ExpiredTaxExemption;
         }
 
         TaxId = taxId?.Trim();
@@ -159,82 +175,87 @@ public class Customer
         TaxExemptionCertificateUrl = isTaxExempt ? taxExemptionCertificateUrl?.Trim() : null;
         TaxExemptionExpiryDate = isTaxExempt ? taxExemptionExpiryDate : null;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
 
-    public void SetPaymentTerms(int? defaultPaymentDueDays, decimal? earlyPaymentDiscountPercent, int? earlyPaymentDiscountDays)
+    public ErrorOr<Updated> SetPaymentTerms(int? defaultPaymentDueDays, decimal? earlyPaymentDiscountPercent, int? earlyPaymentDiscountDays)
     {
-        EnsureNotDeleted();
-        
+        if (IsDeleted) return CustomerErrors.Deleted;
+
         if (defaultPaymentDueDays.HasValue && defaultPaymentDueDays < 0)
-            throw new ArgumentException("Default payment due days cannot be negative.", nameof(defaultPaymentDueDays));
+            return CustomerErrors.NegativePaymentDueDays;
+        
         if (earlyPaymentDiscountPercent.HasValue && (earlyPaymentDiscountPercent < 0 || earlyPaymentDiscountPercent > 1))
-            throw new ArgumentException("Early payment discount percent must be between 0 and 1.", nameof(earlyPaymentDiscountPercent));
+            return CustomerErrors.InvalidDiscountPercent;
+        
         if (earlyPaymentDiscountDays.HasValue && earlyPaymentDiscountDays < 0)
-            throw new ArgumentException("Early payment discount days cannot be negative.", nameof(earlyPaymentDiscountDays));
+            return CustomerErrors.NegativeDiscountDays;
+        
         if (earlyPaymentDiscountPercent.HasValue && !earlyPaymentDiscountDays.HasValue)
-            throw new ArgumentException("Early payment discount days are required when a discount percent is set.", nameof(earlyPaymentDiscountDays));
+            return CustomerErrors.DiscountDaysRequiredWithPercent;
+        
         if (earlyPaymentDiscountDays.HasValue && !earlyPaymentDiscountPercent.HasValue)
-            throw new ArgumentException("Early payment discount percent is required when discount days are set.", nameof(earlyPaymentDiscountPercent));
+            return CustomerErrors.DiscountPercentRequiredWithDays;
 
         DefaultPaymentDueDays = defaultPaymentDueDays;
         EarlyPaymentDiscountPercent = earlyPaymentDiscountPercent;
         EarlyPaymentDiscountDays = earlyPaymentDiscountDays;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
 
-    public void Activate()
+    public ErrorOr<Updated> Activate()
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return CustomerErrors.Deleted;
 
         IsActive = true;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
 
-    public void Deactivate()
+    public ErrorOr<Updated> Deactivate()
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return CustomerErrors.Deleted;
 
         IsActive = false;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
 
-    public void SoftDelete()
+    public ErrorOr<Deleted> SoftDelete()
     {
+        if (IsDeleted) return CustomerErrors.Deleted;
+
         IsDeleted = true;
         IsActive = false;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Deleted;
     }
     
     
     // --- Helpers ---
 
-    private static void RequireNonEmpty(string? value, string paramName, string? message = null)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException(message ?? $"{paramName} is required.", paramName);
-    }
-
-    private static void RequireValidEmail(string email)
+    private static Error? ValidateEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
-            throw new ArgumentException("Email is required.", nameof(email));
+            return CustomerErrors.EmptyEmail;
         try
         {
             var addr = new System.Net.Mail.MailAddress(email);
             if (addr.Address != email.Trim().ToLower())
-                throw new ArgumentException("Email is invalid.", nameof(email));
+                return CustomerErrors.InvalidEmail;
         }
         catch (FormatException)
         {
-            throw new ArgumentException("Email is invalid.", nameof(email));
+            return CustomerErrors.InvalidEmail;
         }
-    }
 
-    
-    private void EnsureNotDeleted()
-    {
-        if (IsDeleted)
-            throw new InvalidOperationException("Operation cannot be performed on a deleted customer.");
+        return null;
     }
     
 }

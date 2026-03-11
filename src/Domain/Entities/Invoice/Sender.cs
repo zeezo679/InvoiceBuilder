@@ -1,6 +1,6 @@
-using System.ComponentModel.DataAnnotations;
 using System.Net.Mail;
-using System.Runtime.CompilerServices;
+using Domain.Errors;
+using ErrorOr;
 
 namespace Domain.Entities;
 
@@ -43,26 +43,17 @@ public class Sender
     
     private Sender(){}
 
-    public static Sender Create(string userId, string businessName, string email, string addressLine1, string city,
+    public static ErrorOr<Sender> Create(string userId, string businessName, string email, string addressLine1, string city,
         string state, string postalCode, string country)
     {
-        //user id must not be null or empty
-        if (string.IsNullOrWhiteSpace(userId))
-            throw new ArgumentException("User ID is required.", nameof(userId));
-        if (string.IsNullOrWhiteSpace(businessName))
-            throw new ArgumentException("Business name is required.", nameof(businessName));
-        if (!IsValidEmail(email))
-            throw new ArgumentException("Email is invalid.", nameof(email));
-        if (string.IsNullOrWhiteSpace(addressLine1))
-            throw new ArgumentException("Address line 1 is required.", nameof(addressLine1));
-        if (string.IsNullOrWhiteSpace(city))
-            throw new ArgumentException("City is required.", nameof(city));
-        if (string.IsNullOrWhiteSpace(state))
-            throw new ArgumentException("State is required.", nameof(state));
-        if (string.IsNullOrWhiteSpace(postalCode))
-            throw new ArgumentException("Postal code is required.", nameof(postalCode));
-        if (string.IsNullOrWhiteSpace(country))
-            throw new ArgumentException("Country is required.", nameof(country));
+        if (string.IsNullOrWhiteSpace(userId)) return SenderErrors.EmptyUserId;
+        if (string.IsNullOrWhiteSpace(businessName)) return SenderErrors.EmptyBusinessName;
+        if (!IsValidEmail(email)) return SenderErrors.InvalidEmail;
+        if (string.IsNullOrWhiteSpace(addressLine1)) return SenderErrors.EmptyAddressLine1;
+        if (string.IsNullOrWhiteSpace(city)) return SenderErrors.EmptyCity;
+        if (string.IsNullOrWhiteSpace(state)) return SenderErrors.EmptyState;
+        if (string.IsNullOrWhiteSpace(postalCode)) return SenderErrors.EmptyPostalCode;
+        if (string.IsNullOrWhiteSpace(country)) return SenderErrors.EmptyCountry;
 
         return new Sender
         {
@@ -82,45 +73,39 @@ public class Sender
         };
     }
     
-    public void UpdateBusinessInfo(string businessName, string? legalName = null)
+    public ErrorOr<Updated> UpdateBusinessInfo(string businessName, string? legalName = null)
     {
-        EnsureNotDeleted();
-        
-        if (string.IsNullOrWhiteSpace(businessName))
-            throw new ArgumentException("Business name is required.", nameof(businessName));
+        if (IsDeleted) return SenderErrors.Deleted;
+        if (string.IsNullOrWhiteSpace(businessName)) return SenderErrors.EmptyBusinessName;
         
         BusinessName = businessName.Trim();
         LegalName = legalName?.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void UpdateContactInfo(string email, string? phone = null, string? website = null)
+    public ErrorOr<Updated> UpdateContactInfo(string email, string? phone = null, string? website = null)
     {
-        EnsureNotDeleted();
-        
-        if (!IsValidEmail(email))
-            throw new ArgumentException("Email is invalid.", nameof(email));
+        if (IsDeleted) return SenderErrors.Deleted;
+        if (!IsValidEmail(email)) return SenderErrors.InvalidEmail;
         
         Email = email.Trim().ToLower();
         Phone = phone?.Trim();
         Website = website?.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void UpdateAddress(string addressLine1, string? addressLine2, string city, string state, string postalCode, string country)
+    public ErrorOr<Updated> UpdateAddress(string addressLine1, string? addressLine2, string city, string state, string postalCode, string country)
     {
-        EnsureNotDeleted();
-        
-        if (string.IsNullOrWhiteSpace(addressLine1))
-            throw new ArgumentException("Address line 1 is required.", nameof(addressLine1));
-        if (string.IsNullOrWhiteSpace(city))
-            throw new ArgumentException("City is required.", nameof(city));
-        if (string.IsNullOrWhiteSpace(state))
-            throw new ArgumentException("State is required.", nameof(state));
-        if (string.IsNullOrWhiteSpace(postalCode))
-            throw new ArgumentException("Postal code is required.", nameof(postalCode));
-        if (string.IsNullOrWhiteSpace(country))
-            throw new ArgumentException("Country is required.", nameof(country));
+        if (IsDeleted) return SenderErrors.Deleted;
+        if (string.IsNullOrWhiteSpace(addressLine1)) return SenderErrors.EmptyAddressLine1;
+        if (string.IsNullOrWhiteSpace(city)) return SenderErrors.EmptyCity;
+        if (string.IsNullOrWhiteSpace(state)) return SenderErrors.EmptyState;
+        if (string.IsNullOrWhiteSpace(postalCode)) return SenderErrors.EmptyPostalCode;
+        if (string.IsNullOrWhiteSpace(country)) return SenderErrors.EmptyCountry;
 
         AddressLine1 = addressLine1.Trim();
         AddressLine2 = addressLine2?.Trim();
@@ -129,30 +114,28 @@ public class Sender
         PostalCode = postalCode.Trim();
         Country = country.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void SetTaxInfo(string taxId, string? registrationNumber = null)
+    public ErrorOr<Updated> SetTaxInfo(string taxId, string? registrationNumber = null)
     {
-        EnsureNotDeleted();
-        
-        if (string.IsNullOrWhiteSpace(taxId))
-            throw new ArgumentException("Tax ID is required.", nameof(taxId));
+        if (IsDeleted) return SenderErrors.Deleted;
+        if (string.IsNullOrWhiteSpace(taxId)) return SenderErrors.EmptyTaxId;
         
         TaxId = taxId.Trim();
         RegistrationNumber = registrationNumber?.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void UpdateBankDetails(string bankName, string bankAccountNumber, string bankRoutingNumber, string? iban = null, string? swift = null)
+    public ErrorOr<Updated> UpdateBankDetails(string bankName, string bankAccountNumber, string bankRoutingNumber, string? iban = null, string? swift = null)
     {
-        EnsureNotDeleted();
-        
-        if (string.IsNullOrWhiteSpace(bankName))
-            throw new ArgumentException("Bank name is required.", nameof(bankName));
-        if (string.IsNullOrWhiteSpace(bankAccountNumber))
-            throw new ArgumentException("Bank account number is required.", nameof(bankAccountNumber));
-        if (string.IsNullOrWhiteSpace(bankRoutingNumber))
-            throw new ArgumentException("Bank routing number is required.", nameof(bankRoutingNumber));
+        if (IsDeleted) return SenderErrors.Deleted;
+        if (string.IsNullOrWhiteSpace(bankName)) return SenderErrors.EmptyBankName;
+        if (string.IsNullOrWhiteSpace(bankAccountNumber)) return SenderErrors.EmptyBankAccountNumber;
+        if (string.IsNullOrWhiteSpace(bankRoutingNumber)) return SenderErrors.EmptyBankRoutingNumber;
 
         BankName = bankName.Trim();
         BankAccountNumber = bankAccountNumber.Trim();
@@ -160,11 +143,13 @@ public class Sender
         IBAN = iban?.Trim();
         SWIFT = swift?.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void ClearBankDetails()
+    public ErrorOr<Updated> ClearBankDetails()
     {        
-        EnsureNotDeleted();
+        if (IsDeleted) return SenderErrors.Deleted;
 
         BankName = null;
         BankAccountNumber = null;
@@ -172,47 +157,59 @@ public class Sender
         IBAN = null;
         SWIFT = null;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void UpdateBrandColor(string primaryColor)
+    public ErrorOr<Updated> UpdateBrandColor(string primaryColor)
     {
-        EnsureNotDeleted();
-
-        if (string.IsNullOrWhiteSpace(primaryColor))
-            throw new ArgumentException("Primary color is required.", nameof(primaryColor));
+        if (IsDeleted) return SenderErrors.Deleted;
+        if (string.IsNullOrWhiteSpace(primaryColor)) return SenderErrors.EmptyPrimaryColor;
         
         PrimaryColor = primaryColor.Trim();
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void Activate()
+    public ErrorOr<Updated> Activate()
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return SenderErrors.Deleted;
 
         IsActive = true;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void Deactivate()
+    public ErrorOr<Updated> Deactivate()
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return SenderErrors.Deleted;
 
         IsActive = false;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void RemoveLogo()
+    public ErrorOr<Updated> RemoveLogo()
     {
-        EnsureNotDeleted();
+        if (IsDeleted) return SenderErrors.Deleted;
         
         LogoUrl = null;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Updated;
     }
     
-    public void SoftDelete()
+    public ErrorOr<Deleted> SoftDelete()
     {
+        if (IsDeleted) return SenderErrors.Deleted;
+        
         IsDeleted = true;
         UpdatedAt = DateTime.UtcNow;
+
+        return Result.Deleted;
     }
     
     //Helper Methods
@@ -228,11 +225,5 @@ public class Sender
             valid = false;
         }
         return valid;
-    }
-    
-    private void EnsureNotDeleted()
-    {
-        if (IsDeleted)
-            throw new InvalidOperationException("Operation cannot be performed on a deleted sender.");
     }
 }

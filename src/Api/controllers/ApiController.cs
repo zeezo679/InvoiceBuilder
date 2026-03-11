@@ -5,11 +5,9 @@ namespace Api.controllers;
 
 public class ApiController : ControllerBase
 {
-    protected IActionResult Problem(List<Error> errors)
+    protected IActionResult Problem(List<Error> error)
     {
-        var firstError = errors[0];
-        
-        var statusCode = firstError.Type switch
+        var statusCode = error[0].Type switch
         {
             ErrorType.NotFound => StatusCodes.Status404NotFound,
             ErrorType.Conflict => StatusCodes.Status409Conflict,
@@ -18,6 +16,6 @@ public class ApiController : ControllerBase
             _ => StatusCodes.Status500InternalServerError
         };
 
-        return Problem(title: firstError.Description, statusCode: statusCode);
+        return Problem(title: error[0].Description, statusCode: statusCode);
     }
 }

@@ -33,10 +33,10 @@ public class InvoiceLineItem
     //factory method
     public static ErrorOr<InvoiceLineItem> Create(Guid invoiceId, string description, int quantity, decimal unitPrice, decimal taxRate)
     {
-        var validationResult = ValidateLineItemCreation(description, quantity, unitPrice, taxRate);
+        var validationError = ValidateLineItemCreation(description, quantity, unitPrice, taxRate);
         
-        if(validationResult.Count > 0)
-            return validationResult;
+        if(validationError is not null)
+            return validationError.Value;
         
         return new InvoiceLineItem
         {
@@ -86,20 +86,18 @@ public class InvoiceLineItem
     
     
     // Validators
-    private static List<Error> ValidateLineItemCreation(string description,int quantity, decimal unitPrice, decimal taxRate)
+    private static Error? ValidateLineItemCreation(string description,int quantity, decimal unitPrice, decimal taxRate)
     {
-        List<Error> errors = [];
-        
         if(string.IsNullOrWhiteSpace(description))
-            errors.Add(InvoiceLineItemErrors.InvalidDescription);
+            return InvoiceLineItemErrors.InvalidDescription;
         if (quantity <= 0)
-            errors.Add(InvoiceLineItemErrors.InvalidQuantity);
+            return InvoiceLineItemErrors.InvalidQuantity;
         if (unitPrice <= 0)
-            errors.Add(InvoiceLineItemErrors.InvalidUnitPrice);
+            return InvoiceLineItemErrors.InvalidUnitPrice;
         if (taxRate < 0 || taxRate > 1)
-            errors.Add(InvoiceLineItemErrors.InvalidTaxRate);
+            return InvoiceLineItemErrors.InvalidTaxRate;
         
-        return errors;
+        return null;
     }
     
 }
