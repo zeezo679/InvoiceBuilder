@@ -1,4 +1,7 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
+using Application.Auth.Login;
 using Application.Common.Interfaces;
 using ErrorOr;
 using Microsoft.AspNetCore.WebUtilities;
@@ -15,18 +18,21 @@ public class IdentityService : IIdentityService
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
     private readonly IBackgroundJobService _backgroundJobService;
+    private readonly ITokenService _tokenService;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager, 
         IConfiguration configuration,
         IEmailService emailService,
-        IBackgroundJobService backgroundJobService
+        IBackgroundJobService backgroundJobService,
+        ITokenService tokenService
         )
     {
         _userManager = userManager;
         _configuration = configuration;
         _emailService = emailService;
         _backgroundJobService = backgroundJobService;
+        _tokenService = tokenService;
     }
 
 
@@ -47,6 +53,40 @@ public class IdentityService : IIdentityService
         
         await SendVerificationEmailAsync(user);
         return user.Id;
+    }
+
+    public async Task<ErrorOr<LoginResult>> LoginAsync(string email, string password)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user is null)
+            return Error.Failure("Identity.Login", "Invalid email or password.");
+
+        if (!user.EmailConfirmed)
+            return Error.Failure("Identity.Login", "Email not confirmed. Please verify your email before logging in.");
+        
+        var isPasswordValid = await _userManager.CheckPasswordAsync(user, password);
+
+        if (!isPasswordValid)
+        {
+            await _userManager.AccessFailedAsync(user);
+            return Error.Failure("Identity.Login", "Invalid email or password.");
+        }
+
+        await _userManager.ResetAccessFailedCountAsync(user);
+
+        var claims =  BuildClaims(user);
+        var token = _tokenService.GenerateAccessToken(claims);
+        var refreshToken = _tokenService.GenerateRefreshToken();
+
+        // TODO: Persist refreshToken associated with user for later validation
+
+        return new LoginResult
+        {
+            AccessToken = token,
+            RefreshToken = refreshToken,
+        };
+        
     }
 
     private async Task SendVerificationEmailAsync(ApplicationUser user)
@@ -84,5 +124,17 @@ public class IdentityService : IIdentityService
 
         var result = await _userManager.ConfirmEmailAsync(user, token);
         return result.Succeeded;
+    }
+
+    private IEnumerable<Claim> BuildClaims(ApplicationUser user)
+    {
+        var userClaims = new List<Claim>()
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        };
+
+        return userClaims;
     }
 }
