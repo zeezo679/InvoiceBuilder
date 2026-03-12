@@ -124,7 +124,6 @@ public class Invoice
         return Result.Updated;
     }
     
-
     private ErrorOr<Updated> SetDueDate(string paymentTerms)
     {
         if (IsDeleted) return InvoiceErrors.Deleted;
@@ -283,4 +282,3 @@ public class Invoice
 }
 
 
-// TODO - Done

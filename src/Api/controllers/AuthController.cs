@@ -1,4 +1,5 @@
 using Api.requests;
+using Application.Auth.Login;
 using Application.Auth.Register;
 using Application.Auth.VerifiyEmail;
 using ErrorOr;
@@ -44,6 +45,18 @@ public class AuthController : ApiController
         return result.Match(
         _ => Ok(new { Message = "Email Verification Complete!"}),
         Problem);
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        var command = new LoginCommand(request.Email, request.Password);
+
+        var result = await _mediator.Send(command);
+
+        return result.Match(
+            loginResult => Ok(new { loginResult.AccessToken, loginResult.RefreshToken }),
+            Problem);
     }
 }
 

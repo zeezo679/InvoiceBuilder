@@ -1,3 +1,4 @@
+using Application.Auth.Login;
 using ErrorOr;
 
 namespace Application.Common.Interfaces;
@@ -5,6 +6,8 @@ namespace Application.Common.Interfaces;
 public interface IIdentityService
 {
     Task<ErrorOr<string>> CreateUserAsync(string firstName, string lastName, string email, string password);
+
+    Task<ErrorOr<LoginResult>> LoginAsync(string email, string password);
 
     Task<bool> UserExistsAsync(string email);
 
