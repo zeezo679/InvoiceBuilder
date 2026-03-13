@@ -18,7 +18,9 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        string connectionString = configuration.GetConnectionString("DefaultConnection");
+        string connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
         
         // Database
         services.AddDbContext<AppDbContext>(options =>
@@ -35,17 +37,20 @@ public static class DependencyInjection
 
         //Hangfire
         services.AddHangfire(config => config
-            .UsePostgreSqlStorage(connectionString));
+            .UsePostgreSqlStorage(o =>
+                o.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"))));
         
         services.AddHangfireServer();
         
         // Options
         services.Configure<EmailOptions>(configuration.GetSection("Email"));
+        services.Configure<JwtOptions>(configuration.GetSection("Jwt"));
         
         // Services
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
+        services.AddScoped<ITokenService, TokenService>();
         
         
         return services;

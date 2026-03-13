@@ -3,9 +3,14 @@ using System.Security.Claims;
 using System.Text;
 using Application.Auth.Login;
 using Application.Common.Interfaces;
+using Application.Options;
+using Domain.Entities.Auth;
 using ErrorOr;
+using Infrastructure.Data;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Services;
 
@@ -19,20 +24,25 @@ public class IdentityService : IIdentityService
     private readonly IEmailService _emailService;
     private readonly IBackgroundJobService _backgroundJobService;
     private readonly ITokenService _tokenService;
+    private readonly AppDbContext _context;
+    private readonly JwtOptions _jwtOptions;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager, 
         IConfiguration configuration,
         IEmailService emailService,
         IBackgroundJobService backgroundJobService,
-        ITokenService tokenService
-        )
+        ITokenService tokenService,
+        AppDbContext context,
+        IOptions<JwtOptions> jwtOptions)
     {
         _userManager = userManager;
         _configuration = configuration;
         _emailService = emailService;
         _backgroundJobService = backgroundJobService;
         _tokenService = tokenService;
+        _context = context;
+        _jwtOptions = jwtOptions.Value;
     }
 
 
@@ -73,13 +83,18 @@ public class IdentityService : IIdentityService
             return Error.Failure("Identity.Login", "Invalid email or password.");
         }
 
+        
         await _userManager.ResetAccessFailedCountAsync(user);
 
+        user.LastLoginAt = DateTime.UtcNow;
+        await _userManager.UpdateAsync(user);
+        
         var claims =  BuildClaims(user);
         var token = _tokenService.GenerateAccessToken(claims);
         var refreshToken = _tokenService.GenerateRefreshToken();
 
-        // TODO: Persist refreshToken associated with user for later validation
+        // Persist refreshToken associated with user for later validation
+        await SaveRefreshTokenAsync(user.Id, refreshToken);
 
         return new LoginResult
         {
@@ -126,6 +141,28 @@ public class IdentityService : IIdentityService
         return result.Succeeded;
     }
 
+    public async Task<ErrorOr<Success>> LogoutAsync(string userId, string refreshToken)
+    {
+        
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+            return Error.Failure("Identity.Logout", "User not found.");
+
+
+        var storedRefreshToken = await _context.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.UserId == userId && rt.Token == refreshToken && !rt.IsRevoked);
+
+        if (storedRefreshToken is null)
+            return Error.Failure("Identity.Logout", "Invalid refresh token.");
+
+
+        storedRefreshToken.IsRevoked = true;
+        await _context.SaveChangesAsync();
+
+        return Result.Success;
+    }
+
+
     private IEnumerable<Claim> BuildClaims(ApplicationUser user)
     {
         var userClaims = new List<Claim>()
@@ -136,5 +173,18 @@ public class IdentityService : IIdentityService
         };
 
         return userClaims;
+    }
+
+    private async Task SaveRefreshTokenAsync(string userId, string refreshToken)
+    {
+        _context.RefreshTokens.Add(new RefreshToken
+        {
+            UserId = userId,
+            Token = refreshToken,
+            IsRevoked = false,
+            Expires = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenExpirationDays)
+        });
+
+        await _context.SaveChangesAsync();
     }
 }

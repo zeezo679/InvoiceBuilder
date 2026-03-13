@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using Api.requests;
 using Application.Auth.Login;
+using Application.Auth.Logout;
 using Application.Auth.Register;
 using Application.Auth.VerifiyEmail;
 using ErrorOr;
@@ -56,6 +58,21 @@ public class AuthController : ApiController
 
         return result.Match(
             loginResult => Ok(new { loginResult.AccessToken, loginResult.RefreshToken }),
+            Problem);
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+    {
+        //get userId from claims for better security, instead of passing it in the request body
+        var UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        var command = new LogoutCommand(UserId, request.RefreshToken);
+
+        var result = await _mediator.Send(command);
+
+        return result.Match(
+            _ => Ok(new { Message = "Logout successful" }),
             Problem);
     }
 }

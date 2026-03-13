@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Application.Common.Interfaces;
 using Application.Options;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Infrastructure.Services;
@@ -12,9 +13,9 @@ public class TokenService : ITokenService
 {
     private readonly JwtOptions _jwtOptions;
 
-    public TokenService(JwtOptions jwtOptions)
+    public TokenService(IOptions<JwtOptions> jwtOptions)
     {
-        _jwtOptions = jwtOptions;
+        _jwtOptions = jwtOptions.Value;
     }
 
     public string GenerateAccessToken(IEnumerable<Claim> claims)

@@ -1,5 +1,8 @@
+using System.Text;
 using Application;
 using Infrastructure;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Api;
 
@@ -15,7 +18,31 @@ public class Program
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-        
+
+        builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ??
+                                                    throw new InvalidOperationException("Jwt:Key is not configured.")))                        
+                    };
+                }
+            );
+
+        builder.Services.AddAuthorization();
+
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("Dev", policy =>
@@ -34,7 +61,8 @@ public class Program
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-        
+
+
      
         
         app.UseCors("Dev");
@@ -45,6 +73,8 @@ public class Program
 
         app.Run();
     }
+
+    
 }
 
 
