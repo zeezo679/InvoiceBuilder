@@ -14,4 +14,6 @@ public interface IIdentityService
     Task<bool> ConfirmEmailAsync(string userId, string token);
 
     Task<ErrorOr<Success>> LogoutAsync(string userId, string refreshToken);
+
+    Task<ErrorOr<Success>> ForgotPasswordAsync(string email);
 }

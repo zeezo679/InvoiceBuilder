@@ -1,12 +1,15 @@
 using System.Security.Claims;
 using Api.requests;
+using Application.Auth.ForgotPassword;
 using Application.Auth.Login;
 using Application.Auth.Logout;
 using Application.Auth.Register;
 using Application.Auth.VerifiyEmail;
 using ErrorOr;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Api.controllers;
 
@@ -50,8 +53,9 @@ public class AuthController : ApiController
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
-    {
+    {   
         var command = new LoginCommand(request.Email, request.Password);
 
         var result = await _mediator.Send(command);
@@ -62,19 +66,31 @@ public class AuthController : ApiController
     }
 
     [HttpPost("logout")]
+    [Authorize]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
     {
         //get userId from claims for better security, instead of passing it in the request body
-        var UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         
-        var command = new LogoutCommand(UserId, request.RefreshToken);
+        var command = new LogoutCommand(userId, request.RefreshToken);
 
         var result = await _mediator.Send(command);
 
         return result.Match(
-            _ => Ok(new { Message = "Logout successful" }),
+            _ => NoContent(),
+            Problem);
+    }
+    
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var command = new ForgotPasswordCommand(request.Email);
+
+        var result = await _mediator.Send(command);
+
+        return result.Match(
+            _ => Ok(new { Message = "If an account with that email exists, a password reset link will be sent." }),
             Problem);
     }
 }
-
 

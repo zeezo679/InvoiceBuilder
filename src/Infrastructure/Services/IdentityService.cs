@@ -109,6 +109,7 @@ public class IdentityService : IIdentityService
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         
+        
         var baseUrl = _configuration["App:BaseUrl"];
         var parameters = new Dictionary<string, string>
         {
@@ -121,7 +122,6 @@ public class IdentityService : IIdentityService
         
         _backgroundJobService.Enqueue(() => _emailService.SendConfirmationEmailAsync(
             user.Email,
-            "Email Verification", 
             verificationUri));
     }
 
@@ -162,6 +162,31 @@ public class IdentityService : IIdentityService
         return Result.Success;
     }
 
+    public async Task<ErrorOr<Success>> ForgotPasswordAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null)
+            return Error.Failure("Identity.ForgotPassword", "If an account with that email exists, a password reset link will be sent.");
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        var baseUrl = _configuration["App:BaseUrl"];
+        var parameters = new Dictionary<string, string>
+        {
+            { "token", encodedToken },
+            { "UserId", user.Id }
+        };
+
+        var resetUri = QueryHelpers
+            .AddQueryString($"{baseUrl}/auth/reset-password", parameters);
+
+        _backgroundJobService.Enqueue(() => _emailService.SendPasswordResetEmailAsync(
+            user.Email,
+            resetUri));
+
+        return Result.Success;
+    }
 
     private IEnumerable<Claim> BuildClaims(ApplicationUser user)
     {
