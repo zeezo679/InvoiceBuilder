@@ -69,4 +69,35 @@ public class RegisterUserCommandHandlerTests
         // this will fail because it is comparing another instance of RegisterResult, we need to compare the properties instead
         // result.Value.Should().Be(new RegisterResult(email: "john.doe@example.com", userId: "new-user-id")); 
     }
+
+    [Fact]
+    public async Task Handle_WhenUserCreationFailsEvenIfTheEmailDoesNotExist_ReturnsError()
+    {
+        //Arrange
+        var identityServiceMock = new Mock<IIdentityService>();
+
+        identityServiceMock
+        .Setup(s => s.UserExistsAsync(It.IsAny<string>()))
+        .ReturnsAsync(false);
+
+        identityServiceMock
+        .Setup(s => s.CreateUserAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+        .ReturnsAsync(Error.Failure("Identity.CreateUser", "Failed to create user"));
+        
+        var handler = new RegisterUserCommandHandler(identityServiceMock.Object);
+        var command = new RegisterUserCommand
+        (
+            FirstName: "John",
+            LastName: "Doe",
+            Email: "john.doe@example.com",
+            Password: "Password123!"
+        );
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsError.Should().BeTrue();
+        result.FirstError.Type.Should().Be(ErrorType.Failure);
+    }
 }
