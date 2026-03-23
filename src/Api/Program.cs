@@ -95,13 +95,13 @@ public class Program
         {
             app.UseSwagger();
             app.UseSwaggerUI();
+            app.UseHttpsRedirection();
         }
 
 
      
         
         app.UseCors("Dev");
-        app.UseHttpsRedirection();
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseRateLimiter();
