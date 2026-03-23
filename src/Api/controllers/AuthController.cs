@@ -4,6 +4,7 @@ using Application.Auth.ForgotPassword;
 using Application.Auth.Login;
 using Application.Auth.Logout;
 using Application.Auth.Register;
+using Application.Auth.ResetPassword;
 using Application.Auth.VerifiyEmail;
 using ErrorOr;
 using MediatR;
@@ -43,7 +44,7 @@ public class AuthController : ApiController
     [HttpGet("verify-email")]
     public async Task<IActionResult> VerifyEmail([FromQuery] EmailVerificationRequest request)
     {
-        var command = new VerifyEmailCommand(request.UserId, request.Token);
+        var command = new VerifyEmailCommand(request.email, request.Token);
 
         var result = await _mediator.Send(command);
         
@@ -92,5 +93,22 @@ public class AuthController : ApiController
             _ => Ok(new { Message = "If an account with that email exists, a password reset link will be sent." }),
             Problem);
     }
-}
 
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(
+        [FromQuery] ResetPasswordQueryParams queryParams,
+        [FromBody] ResetPasswordRequestBody request)
+    {
+        var command = new ResetPasswordCommand(
+            queryParams.Email,
+            queryParams.Token,
+            request.NewPassword,
+            request.ConfirmPassword);
+
+        var result = await _mediator.Send(command);
+
+        return result.Match(
+            _ => Ok(new { Message = "Password reset successfully." }),
+            Problem);
+    }
+}

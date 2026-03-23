@@ -19,7 +19,7 @@ public sealed class VerifyEmailCommandHandler : IRequestHandler<VerifyEmailComma
     {
         var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token));
 
-        var result = await _identityService.ConfirmEmailAsync(request.UserId, decodedToken);
+        var result = await _identityService.ConfirmEmailAsync(request.email, decodedToken);
 
         if (!result)
             return Error.Failure(description: "Invalid or Expired verification link");

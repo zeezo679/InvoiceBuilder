@@ -114,7 +114,7 @@ public class IdentityService : IIdentityService
         var parameters = new Dictionary<string, string>
         {
             { "token", encodedToken },
-            { "UserId", user.Id }
+            { "email", user.Email }
         };
         
         var verificationUri = QueryHelpers
@@ -132,9 +132,9 @@ public class IdentityService : IIdentityService
         return existingUser is null ? false : true;
     }
 
-    public async Task<bool> ConfirmEmailAsync(string userId, string token)
+    public async Task<bool> ConfirmEmailAsync(string email, string token)
     {
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByEmailAsync(email);
         if (user is null) return false;
 
         var result = await _userManager.ConfirmEmailAsync(user, token);
@@ -175,7 +175,7 @@ public class IdentityService : IIdentityService
         var parameters = new Dictionary<string, string>
         {
             { "token", encodedToken },
-            { "UserId", user.Id }
+            { "email", user.Email }
         };
 
         var resetUri = QueryHelpers
@@ -184,6 +184,24 @@ public class IdentityService : IIdentityService
         _backgroundJobService.Enqueue(() => _emailService.SendPasswordResetEmailAsync(
             user.Email,
             resetUri));
+
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<Success>> ResetPasswordAsync(string email, string token, string newPassword, string confirmPassword)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null)
+            return Error.Failure("Identity.ResetPassword", "Invalid password reset request.");
+
+        if (newPassword != confirmPassword)
+            return Error.Failure("Identity.ResetPassword", "New password and confirmation do not match.");
+
+        var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, newPassword);
+
+        if (!result.Succeeded)
+            return Error.Failure("Identity.ResetPassword", result.Errors.First().Description);
 
         return Result.Success;
     }

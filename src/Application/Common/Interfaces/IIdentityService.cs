@@ -11,9 +11,11 @@ public interface IIdentityService
 
     Task<bool> UserExistsAsync(string email);
 
-    Task<bool> ConfirmEmailAsync(string userId, string token);
+    Task<bool> ConfirmEmailAsync(string email, string token);
 
     Task<ErrorOr<Success>> LogoutAsync(string userId, string refreshToken);
 
     Task<ErrorOr<Success>> ForgotPasswordAsync(string email);
+
+    Task<ErrorOr<Success>> ResetPasswordAsync(string email, string token, string newPassword, string confirmPassword);
 }
