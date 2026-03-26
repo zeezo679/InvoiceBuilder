@@ -4,6 +4,7 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using Infrastructure.Data;
 using Infrastructure.Identity;
+using Infrastructure.Persistence;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -52,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IAppDbContext, AppDbContext>();
+        services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
         
         
         return services;

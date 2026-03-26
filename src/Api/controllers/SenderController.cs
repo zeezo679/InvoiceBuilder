@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Api.requests.Invoice;
 using Application.Invoice.Sender.Commands;
+using Application.Invoice.Sender.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -38,11 +39,21 @@ public class SenderController : ApiController
         var result = await _mediator.Send(command);
 
         return result.Match(
-            createSenderResult => Ok(new { createSenderResult.Id }), //change after testing
+            createSenderResult => CreatedAtAction(nameof(GetSenders), new { id = createSenderResult.Id }, createSenderResult),
             Problem);
-
+        
     }   
     
+    [HttpGet]
+    public async Task<IActionResult> GetSenders([FromQuery] string userId, [FromQuery] bool? isActive)
+    {
+        var query = new GetSendersQuery(userId, isActive ?? false);
+        var result = await _mediator.Send(query);
+
+        return result.Match(
+            senders => Ok(senders),
+            Problem);   
+    }
 }
 
 

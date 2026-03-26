@@ -19,6 +19,8 @@ public class CreateSenderCommandHandler : IRequestHandler<CreateSenderCommand, E
 
     public async Task<ErrorOr<CreateSenderResult>> Handle(CreateSenderCommand request, CancellationToken cancellationToken)
     {
+        // cancelling before heavy work
+        cancellationToken.ThrowIfCancellationRequested();
 
         var exists = await _context.Senders.AnyAsync(s => s.UserId == request.UserId && !s.IsDeleted, cancellationToken);
 
