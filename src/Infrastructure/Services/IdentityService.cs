@@ -171,7 +171,7 @@ public class IdentityService : IIdentityService
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-        var baseUrl = _configuration["App:BaseUrl"];
+        var baseUrl = _configuration["App:ReactUrl"];
         var parameters = new Dictionary<string, string>
         {
             { "token", encodedToken },

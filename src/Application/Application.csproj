@@ -22,4 +22,10 @@
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Invoice/" />
+      <Folder Include="Invoice/Sender/" />
+      <Folder Include="Invoice/Sender/Commands/" />
+    </ItemGroup>
+
 </Project>
