@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IAppDbContext, AppDbContext>();
         
         
         return services;

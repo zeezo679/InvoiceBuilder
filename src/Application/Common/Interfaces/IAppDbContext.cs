@@ -1,9 +1,10 @@
-using Domain.Entities;
 using Domain.Entities.Payment;
 using Domain.Entities.Reports;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Common.Interfaces;
+using Domain.Entities;
+
 
 public interface IAppDbContext
 {

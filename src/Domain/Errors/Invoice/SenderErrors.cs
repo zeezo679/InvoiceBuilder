@@ -45,4 +45,7 @@ public static class SenderErrors
 
     public static readonly Error EmptyPrimaryColor =
         Error.Validation("Sender.EmptyPrimaryColor", "Primary color is required.");
+
+    public static readonly Error SenderAlreadyExists =
+        Error.Conflict("Sender.AlreadyExists", "A sender for this user already exists.");
 }
