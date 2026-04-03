@@ -4,6 +4,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,10 +26,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Invoice/" />
-      <Folder Include="Invoice/Sender/" />
+      <Folder Include="Common/DTOs/" />
+      <Folder Include="Common/Models/" />
       <Folder Include="Invoice/Sender/Commands/" />
-      <Folder Include="Invoice/Sender/Queries/" />
     </ItemGroup>
 
 </Project>
