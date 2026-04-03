@@ -45,9 +45,12 @@ public class SenderController : ApiController
     }   
     
     [HttpGet]
-    public async Task<IActionResult> GetSenders([FromQuery] string userId, [FromQuery] bool? isActive)
+    public async Task<IActionResult> GetSenders([FromQuery] string userId, [FromQuery] bool? isActive, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        var query = new GetSendersQuery(userId, isActive ?? false);
+        pageSize = Math.Clamp(pageSize, 1, 50); //page size cannot be less than 1 or greater than 50
+        page = Math.Max(page, 1); //page cannot be 0 or negative
+
+        var query = new GetSendersQuery(userId, isActive ?? false, page, pageSize);
         var result = await _mediator.Send(query);
 
         return result.Match(

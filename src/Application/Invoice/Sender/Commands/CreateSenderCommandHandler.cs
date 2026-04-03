@@ -22,7 +22,10 @@ public class CreateSenderCommandHandler : IRequestHandler<CreateSenderCommand, E
         // cancelling before heavy work
         cancellationToken.ThrowIfCancellationRequested();
 
-        var exists = await _context.Senders.AnyAsync(s => s.UserId == request.UserId && !s.IsDeleted, cancellationToken);
+        var exists = await _context.Senders.AnyAsync(
+            s => s.UserId == request.UserId 
+            && s.BusinessName == request.BusinessName 
+            && !s.IsDeleted, cancellationToken);
 
         if (exists)
             return SenderErrors.SenderAlreadyExists;
