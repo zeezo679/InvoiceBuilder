@@ -10,7 +10,7 @@ A professional REST API for creating, managing, and sending invoices — built w
 
 | Layer | Technology |
 |---|---|
-| Framework | ASP.NET Core 8 |
+| Framework | ASP.NET Core 10 |
 | Architecture | Clean Architecture + DDD |
 | CQRS | MediatR |
 | Database | PostgreSQL + EF Core |
