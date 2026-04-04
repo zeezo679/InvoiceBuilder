@@ -4,6 +4,9 @@ namespace Domain.Errors;
 
 public static class SenderErrors
 {
+    public static readonly Error NotFound =
+        Error.NotFound("Sender.NotFound", "The sender was not found.");
+
     public static readonly Error Deleted =
         Error.Conflict("Sender.Deleted", "Operation cannot be performed on a deleted sender.");
 

@@ -28,7 +28,6 @@
     <ItemGroup>
       <Folder Include="Common/DTOs/" />
       <Folder Include="Common/Models/" />
-      <Folder Include="Invoice/Sender/Commands/" />
     </ItemGroup>
 
 </Project>
