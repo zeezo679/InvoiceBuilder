@@ -19,6 +19,3 @@ public class UpdateBusinessInfoCommandValidator : AbstractValidator<UpdateBusine
             .NotEmpty().WithMessage("BusinessName is required.");
     }
 }
-{
-
-}
